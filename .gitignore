@@ -1,4 +1,4 @@
 *.o
-main
+Driver
 .vscode
 .DS_Store

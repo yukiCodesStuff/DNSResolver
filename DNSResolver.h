@@ -35,6 +35,7 @@ public:
     void doDNS();
     int doConnect();
     void ParseData(char* responseBuf);
+    int CheckHeader(FixedDNSHeader* dnsResponseHeader, u_short id, u_short rcode);
 
     // Main Operations
     void doReverseDNSLookup();

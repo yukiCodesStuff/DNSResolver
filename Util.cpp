@@ -1,4 +1,3 @@
-#include <string>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h> // for strerror()
@@ -6,7 +5,7 @@
 #define MAX_DNS_LEN 512
 #define MAX_ATTEMPTS 3
 
-/* DNS query types */
+// DNS query types
 #define DNS_A 1 /* name -> IP */
 #define DNS_NS 2 /* name server */
 #define DNS_CNAME 5 /* canonical name */
@@ -16,10 +15,10 @@
 #define DNS_AXFR 252 /* request for zone transfer */
 #define DNS_ANY 255 /* all records */ 
 
-/* query classes */
+// Query Class
 #define DNS_INET 1
 
-/* flags */
+// Flags
 #define DNS_QUERY (0 << 15) /* 0 = query; 1 = response */
 #define DNS_RESPONSE (1 << 15)
 #define DNS_STDQUERY (0 << 11) /* opcode - 4 bits */
@@ -36,6 +35,10 @@
 #define DNS_REFUSED 5 /* server refused the query */
 
 typedef unsigned short u_short; // 2 bytes
+
+// Function Returns
+#define STATUS_OK 1
+#define STATUS_ERROR -1
 
 // 12 bytes long; 3 fields are 0
 #pragma pack(push, 1)
@@ -56,17 +59,17 @@ struct FixedDNSHeader {
 };
 
 struct DNSQuestion {
-    std::string qname;
+    char qname;
     QueryHeader qheader;
 };
 
 struct DNSRecord {
-    std::string name;
+    char name;
     u_short _type;
     u_short _class;
     int _ttl;
     u_short _len;
-    std::string _data;
+    char _data;
 };
 
 struct DNSRecordHeader {

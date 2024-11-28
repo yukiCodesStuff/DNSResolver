@@ -20,4 +20,5 @@ DNS Resolver is now able to receive and parse portion of data, specifically the 
 
 ### Able to fetch data for reverse DNS queries
 DNS Resolver is able to send and receive queries for reverse DNS queries. The raw data still needs to be parsed.
+
 ![reverse DNS test update 1](./images/reverseDNSTestUpdate1.png)

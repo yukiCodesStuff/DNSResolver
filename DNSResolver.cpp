@@ -18,7 +18,7 @@ int DNSResolver::doConnect() {
 	// Protocl is specified as 0
 	if ((this->sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		printf("[DNSResolver::doConnect::ERROR] Failed to create socket\n");
-		return DNS_ERROR;
+		return STATUS_ERROR;
 	}
 
     // Set timeout using struct timeval
@@ -30,7 +30,7 @@ int DNSResolver::doConnect() {
         // Print error details using strerror
         printf("[DNSResolver::doConnect::ERROR] setsockopt() failed: %s\n", strerror(errno));
         close(this->sock);
-        return DNS_ERROR;
+        return STATUS_ERROR;
     }
 
     /*
@@ -46,7 +46,7 @@ int DNSResolver::doConnect() {
 	if (bind(this->sock, (struct sockaddr*)&this->local, sizeof(this->local)) == -1) {
 		printf("[DNSResolver::doConnect::ERROR] Bind failure\n");
 		close(this->sock);
-		return DNS_ERROR;
+		return STATUS_ERROR;
 	}
 
 	// There is no connect phase; sockets can be used immediately after binding
@@ -55,12 +55,27 @@ int DNSResolver::doConnect() {
 	this->remote.sin_addr.s_addr = inet_addr(this->dnsIP);
 	this->remote.sin_port = htons(53); // DNS port on server
 
-    return DNS_OK;
+    return STATUS_OK;
 }
 
 void DNSResolver::doDNS() {
     if (this->isReverseLookup) this->doReverseDNSLookup();
     else this->doDNSLookup();
+}
+
+int DNSResolver::CheckHeader(FixedDNSHeader* dnsResponseHeader, u_short id, u_short rcode) {
+	if (dnsResponseHeader->_ID != htons(id)) {
+		printf("  ++ invalid reply: TXID mismatch, sent 0x%X, received 0x%X\n", dnsResponseHeader->_ID, htons(id));
+		return STATUS_ERROR;
+	}
+
+	if (rcode != DNS_OK) {
+		printf("  failed with Rcode = %d\n", rcode);
+		return STATUS_ERROR;
+	}
+	printf("  Succeeded with Rcode = %d\n", rcode);
+
+	return STATUS_OK;
 }
 
 void DNSResolver::ParseData(char* responseBuf) {
@@ -77,6 +92,26 @@ void DNSResolver::ParseData(char* responseBuf) {
 		u_short rcode = flags & 0xF;
 
 		printf("  TXID %X, flags %X, questions %d, answers %d, authority %d, additional %d\n", id, flags, qdcount, ancount, nscount, arcount);
+
+		if (CheckHeader(dnsResponseHeader, id, rcode) != STATUS_OK) {
+			return;
+		}
+
+		// Parse Question
+		int pos = sizeof(FixedDNSHeader);
+		unsigned char* qname = (unsigned char*)responseBuf + pos;
+		printf("[DNSResolver::ParseData::LOG] Parsing question...\n");
+		while (*qname) {
+			int len = *qname;
+			printf("Label length: %d\n", len);
+			qname++;
+			for (int i = 0; i < len; i++) {
+				printf("%c", *qname);
+				qname++;
+			}
+			printf("\n");
+		}
+		printf("\n");
 }
 
 void DNSResolver::doReverseDNSLookup() {
@@ -135,7 +170,7 @@ void DNSResolver::doReverseDNSLookup() {
 	printf("Server  : %s\n", this->dnsIP);
 	printf("********************************\n");
 
-    if (doConnect() != DNS_OK) {
+    if (doConnect() != STATUS_OK) {
         printf("[DNSResovler::doReverseDNSLookup::ERROR] Connection Failure\n");
         return;
     }
@@ -229,7 +264,7 @@ void DNSResolver::doDNSLookup() {
 	printf("Server  : %s\n", this->dnsIP);
 	printf("********************************\n");
 
-	if (doConnect() != DNS_OK) {
+	if (doConnect() != STATUS_OK) {
         printf("[DNSResovler::doDNSLookup::ERROR] Connection Failure\n");
         return;
     }

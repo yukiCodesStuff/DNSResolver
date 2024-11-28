@@ -74,11 +74,14 @@ struct DNSRecordHeader {
 };
 #pragma pack(pop)
 
-// Function to print the contents of the packet
-void printPacket(const unsigned char* packet, size_t packetSize) {
-	for (size_t i = 0; i < packetSize; i++) {
-		// Print in hexadecimal
-		printf("%02x ", packet[i]);
-	}
-	printf("\n");
-}
+class Util {
+public:
+    // Function to print the contents of the packet
+    static void printPacket(const unsigned char* packet, size_t packetSize) {
+        for (size_t i = 0; i < packetSize; i++) {
+            // Print in hexadecimal
+            printf("%02x ", packet[i]);
+        }
+        printf("\n");
+    }
+};

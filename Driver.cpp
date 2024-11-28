@@ -11,7 +11,8 @@ int main(int argc, char* argv[]) {
     char* lookupStr = argv[1];
     char* dnsIP = argv[2];
 
-    
+    DNSResolver dnsResolver(lookupStr, dnsIP);
+    dnsResolver.doDNS();
     
     return 0;
 }

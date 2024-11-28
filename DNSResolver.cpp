@@ -25,7 +25,7 @@ int DNSResolver::doConnect() {
     if (setsockopt(this->sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1) {
         printf("[DNSResolver::doConnect::ERROR] setsockopt() failed\n");
         close(this->sock);
-        return;
+        return DNS_ERROR;
     }
 
 	/*
@@ -139,7 +139,7 @@ void DNSResolver::doReverseDNSLookup() {
 		char responseBuf[MAX_DNS_LEN];
 		int responseLen = recvfrom(sock, responseBuf, MAX_DNS_LEN, 0, NULL, NULL);
 		if (responseLen == -1) {
-			printf("[DNSResolver::doReverseDNSLookup::ERROR] recvfrom() failure%d\n");
+			printf("[DNSResolver::doReverseDNSLookup::ERROR] recvfrom() failure\n");
 			close(sock);
 			return;
 		}
@@ -149,6 +149,10 @@ void DNSResolver::doReverseDNSLookup() {
         printf(" response in %.0f ms with %d bytes\n", elapsedTime, responseLen);
 
         // Helper
-        printPacket((unsigned char*)&responseBuf, responseLen);
+        Util::printPacket((unsigned char*)&responseBuf, responseLen);
     }
+}
+
+void DNSResolver::doDNSLookup() {
+    return;
 }

@@ -1,5 +1,4 @@
 #include <iostream>
-#include <Util.cpp>
 #include <set>
 #include <arpa/inet.h>
 #include <cstring>
@@ -7,6 +6,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <time.h>
+
+#include "Util.cpp"
 
 class DNSResolver {
 private:

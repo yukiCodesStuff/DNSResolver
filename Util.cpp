@@ -84,6 +84,7 @@ public:
         for (size_t i = 0; i < packetSize; i++) {
             // Print in hexadecimal
             printf("%02x ", packet[i]);
+            if (i % 10 == 0) printf("\n");
         }
         printf("\n");
     }

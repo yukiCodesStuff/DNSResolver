@@ -33,3 +33,6 @@ clean:
 reverseDNSTest: $(TARGET)
 	./$(TARGET) 128.194.135.66 8.8.8.8
 
+DNSTest: $(TARGET)
+	./$(TARGET) www.amazon.com 8.8.8.8
+

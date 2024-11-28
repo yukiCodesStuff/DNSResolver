@@ -1,6 +1,6 @@
 #include "DNSResolver.h"
 
-DNSResolver::DNSResolver(char* lookupStr, char* dnsIP) : lookupStr(lookupStr), dnsIP(dnsIP) {
+DNSResolver::DNSResolver(char* lookupStr, char* dnsIP) : dnsIP(dnsIP) {
     // Populate fields based on operation type
     this->isReverseLookup = inet_addr(lookupStr) == INADDR_NONE ? false : true;
     if (this->isReverseLookup) this->IP = lookupStr;
@@ -13,7 +13,7 @@ DNSResolver::~DNSResolver() {
 
 int DNSResolver::doConnect() {
 
-    // AF_INET: IPv4
+	// AF_INET: IPv4
 	// SOCK_DGRAM: UDP (datagram-based protocol)
 	// Protocl is specified as 0
 	if ((this->sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
@@ -68,8 +68,7 @@ void DNSResolver::doReverseDNSLookup() {
     // Construct query
 	char packet[MAX_DNS_LEN];
 	memset(packet, 0, MAX_DNS_LEN);
-	int pkt_size = strlen(this->IP) + 2 + sizeof(QueryHeader) + sizeof(FixedDNSHeader);
-
+	
 	// Setting DNS header values
 	struct FixedDNSHeader dnsHeader {
 		htons(rand() % 65536), // tx id
@@ -83,7 +82,6 @@ void DNSResolver::doReverseDNSLookup() {
 
     // Set qname
 	char qname[MAX_DNS_LEN];
-	char* qptr = qname;
 
 	// Reverse byte order then convert to string
 	struct in_addr addr;
@@ -128,36 +126,128 @@ void DNSResolver::doReverseDNSLookup() {
 
     int querySize = sizeof(FixedDNSHeader) + strlen(qname) + sizeof(QueryHeader) + 2;
     for (int attempt = 0; attempt < MAX_ATTEMPTS; ++attempt) {
-        printf("Attempt %d with %d bytes... ", attempt, querySize);
+        printf("Attempt %d with %d bytes... ", attempt + 1, querySize);
 
         // Timer
         clock_t timer = clock();
 
         // Send query
         if (sendto(this->sock, packet, querySize, 0, (struct sockaddr*)&remote, sizeof(remote)) == -1) {
-			printf("[DNSResolver::doReverseDNSLookup::ERROR] sendto() failure\n");
+			printf("[DNSResolver::doReverseDNSLookup::ERROR] sendto() failure, reattemtping...\n");
 			close(this->sock);
-			return;
+			break;
 		}
 
         // Receive the response
 		char responseBuf[MAX_DNS_LEN];
 		int responseLen = recvfrom(sock, responseBuf, MAX_DNS_LEN, 0, NULL, NULL);
 		if (responseLen == -1) {
-			printf("[DNSResolver::doReverseDNSLookup::ERROR] recvfrom() failure\n");
+			printf("[DNSResolver::doReverseDNSLookup::ERROR] recvfrom() failure, reattempting...\n");
 			close(sock);
-			return;
+			break;
 		}
 
         // Print status
-        float elapsedTime = (clock() - timer) / CLOCKS_PER_SEC;
-        printf(" response in %.0f ms with %d bytes\n", elapsedTime, responseLen);
+        float elapsedTime = (clock() - timer) / (float)CLOCKS_PER_SEC;
+        printf(" response in %.3f ms with %d bytes\n", elapsedTime, responseLen);
 
         // Helper
         Util::printPacket((unsigned char*)&responseBuf, responseLen);
+
+		printf("[DNSResolver::doReverseDNSLookup::LOG] Success!\n");
+		return;
     }
+
+	printf("[DNSResolver::doReverseDNSLookup::LOG] Failed after %d attempts.\n", MAX_ATTEMPTS);
 }
 
 void DNSResolver::doDNSLookup() {
-    return;
+
+    // construct query
+	char packet[MAX_DNS_LEN];
+	memset(packet, 0, MAX_DNS_LEN);
+	
+	// set DNS header values
+	struct FixedDNSHeader dnsHeader {
+		htons(rand() % 65536), // tx id
+		htons(DNS_QUERY | DNS_RD | DNS_STDQUERY), // set DNS query flags
+		htons(1), // number of questions
+		htons(0), // number of resource records
+		htons(0), // number of name server resource records in the authority records section
+		htons(0) // number of resource records in the additional records section
+	};
+	memcpy(packet, &dnsHeader, sizeof(dnsHeader));
+
+	// set qname
+	char qname[MAX_DNS_LEN];
+	const char* start = this->host;
+	char* qptr = qname;
+
+	while (*start) {
+		const char* end = strchr(start, '.');
+		int length = (end ? end - start : strlen(start));
+		*qptr++ = static_cast<char>(length);
+		memcpy(qptr, start, length);
+		qptr += length;
+
+		start += length;
+		if (end) {
+			start++; // skip dots
+		}
+	}
+	*qptr++ = 0; // null terminate
+	*qptr = '\0';
+	memcpy(packet + sizeof(dnsHeader), &qname, strlen(qname) + 1);
+
+	// set query header values
+	QueryHeader queryHeader{
+		htons(DNS_A),
+		htons(DNS_INET)
+	};
+	memcpy(packet + sizeof(dnsHeader) + strlen(qname) + 1, &queryHeader, sizeof(queryHeader));
+
+	printf("Query   : %s, type %hu, TXID 0x%04X\n", this->host, DNS_A, dnsHeader._ID);
+	printf("Server  : %s\n", this->dnsIP);
+	printf("********************************\n");
+
+	if (doConnect() != DNS_OK) {
+        printf("[DNSResovler::doDNSLookup::ERROR] Connection Failure\n");
+        return;
+    }
+
+	int querySize = sizeof(FixedDNSHeader) + strlen(qname) + sizeof(QueryHeader) + 2;
+    for (int attempt = 0; attempt < MAX_ATTEMPTS; ++attempt) {
+        printf("Attempt %d with %d bytes... ", attempt + 1, querySize);
+
+        // Timer
+        clock_t timer = clock();
+
+        // Send query
+        if (sendto(this->sock, packet, querySize, 0, (struct sockaddr*)&remote, sizeof(remote)) == -1) {
+			printf("[DNSResolver::doReverseDNSLookup::ERROR] sendto() failure, reattemtping...\n");
+			close(this->sock);
+			break;
+		}
+
+        // Receive the response
+		char responseBuf[MAX_DNS_LEN];
+		int responseLen = recvfrom(sock, responseBuf, MAX_DNS_LEN, 0, NULL, NULL);
+		if (responseLen == -1) {
+			printf("[DNSResolver::doReverseDNSLookup::ERROR] recvfrom() failure, reattempting...\n");
+			close(sock);
+			break;
+		}
+
+        // Print status
+        float elapsedTime = (clock() - timer) / (float)CLOCKS_PER_SEC;
+        printf(" response in %.3f ms with %d bytes\n", elapsedTime, responseLen);
+
+        // Helper
+        Util::printPacket((unsigned char*)&responseBuf, responseLen);
+
+		printf("[DNSResolver::doDNSLookup::LOG] Success!\n");
+		return;
+    }
+
+	printf("[DNSResolver::doDNSLookup::LOG] Failed after %d attempts.\n", MAX_ATTEMPTS);
 }

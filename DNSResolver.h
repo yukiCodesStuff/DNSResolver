@@ -13,7 +13,6 @@ class DNSResolver {
 private:
 
     // Upon class init
-    char* lookupStr = NULL;
     char* dnsIP = NULL;
     bool isReverseLookup = false;
 

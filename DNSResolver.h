@@ -34,6 +34,7 @@ public:
     // Helper Functions
     void doDNS();
     int doConnect();
+    void ParseData(char* responseBuf);
 
     // Main Operations
     void doReverseDNSLookup();

@@ -63,6 +63,22 @@ void DNSResolver::doDNS() {
     else this->doDNSLookup();
 }
 
+void DNSResolver::ParseData(char* responseBuf) {
+
+		FixedDNSHeader* dnsResponseHeader = (FixedDNSHeader*)responseBuf;
+
+		// Reverse from network byte order to host byte order
+		u_short id = ntohs(dnsResponseHeader->_ID);
+		u_short flags = ntohs(dnsResponseHeader->_flags);
+		u_short qdcount = ntohs(dnsResponseHeader->_questions);
+		u_short ancount = ntohs(dnsResponseHeader->_answers);
+		u_short nscount = ntohs(dnsResponseHeader->_authority);
+		u_short arcount = ntohs(dnsResponseHeader->_additional);
+		u_short rcode = flags & 0xF;
+
+		printf("  TXID %X, flags %X, questions %d, answers %d, authority %d, additional %d\n", id, flags, qdcount, ancount, nscount, arcount);
+}
+
 void DNSResolver::doReverseDNSLookup() {
 
     // Construct query
@@ -151,10 +167,13 @@ void DNSResolver::doReverseDNSLookup() {
         float elapsedTime = (clock() - timer) / (float)CLOCKS_PER_SEC;
         printf(" response in %.3f ms with %d bytes\n", elapsedTime, responseLen);
 
-        // Helper
-        Util::printPacket((unsigned char*)&responseBuf, responseLen);
+        // Debugging
+        // Util::printPacket((unsigned char*)&responseBuf, responseLen);
 
-		printf("[DNSResolver::doReverseDNSLookup::LOG] Success!\n");
+		// printf("[DNSResolver::doReverseDNSLookup::LOG] Success!\n");
+
+		ParseData(responseBuf);
+
 		return;
     }
 
@@ -242,10 +261,13 @@ void DNSResolver::doDNSLookup() {
         float elapsedTime = (clock() - timer) / (float)CLOCKS_PER_SEC;
         printf(" response in %.3f ms with %d bytes\n", elapsedTime, responseLen);
 
-        // Helper
-        Util::printPacket((unsigned char*)&responseBuf, responseLen);
+        // Debugging Packet
+        // Util::printPacket((unsigned char*)&responseBuf, responseLen);
 
-		printf("[DNSResolver::doDNSLookup::LOG] Success!\n");
+		// printf("[DNSResolver::doDNSLookup::LOG] Success!\n");
+
+		ParseData(responseBuf);
+
 		return;
     }
 

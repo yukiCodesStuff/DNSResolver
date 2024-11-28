@@ -1,4 +1,7 @@
 #include <string>
+#include <errno.h>
+#include <stdio.h>
+#include <string.h> // for strerror()
 
 #define MAX_DNS_LEN 512
 #define MAX_ATTEMPTS 3

@@ -12,6 +12,7 @@ DNSResolver::~DNSResolver() {
 }
 
 int DNSResolver::doConnect() {
+
     // AF_INET: IPv4
 	// SOCK_DGRAM: UDP (datagram-based protocol)
 	// Protocl is specified as 0
@@ -20,15 +21,19 @@ int DNSResolver::doConnect() {
 		return DNS_ERROR;
 	}
 
-    // Set timeout
-    int timeout = 1000; // ms
-    if (setsockopt(this->sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) == -1) {
-        printf("[DNSResolver::doConnect::ERROR] setsockopt() failed\n");
+    // Set timeout using struct timeval
+    struct timeval timeout;
+    timeout.tv_sec = 1; // seconds
+    timeout.tv_usec = 0; // 1000 milliseconds (1 second)
+
+    if (setsockopt(this->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
+        // Print error details using strerror
+        printf("[DNSResolver::doConnect::ERROR] setsockopt() failed: %s\n", strerror(errno));
         close(this->sock);
         return DNS_ERROR;
     }
 
-	/*
+    /*
 		Note that local.sin_addr specifies which local IP address you are binding the socket to, which
 		may be important if you have multiple network cards in the computer. Since you do not have a
 		preference in this homework, INADDR_ANY allows you to receive packets on all physical

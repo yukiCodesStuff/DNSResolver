@@ -15,3 +15,4 @@ Some basic tests can be ran if you do not have a Look Up IP or DNS server IP rea
 
 ### Able to fetch data for reverse DNS queries
 DNS Resolver is able to send and receive queries for reverse DNS queries. The raw data still needs to be parsed.
+![reverse DNS test update 1](./images/reverseDNSTestUpdate1.png)

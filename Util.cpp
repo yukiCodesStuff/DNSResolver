@@ -81,9 +81,9 @@ class Util {
 public:
     // Function to print the contents of the packet
     static void printPacket(const unsigned char* packet, size_t packetSize) {
-        for (size_t i = 0; i < packetSize; i++) {
+        for (size_t i = 1; i < packetSize + 1; i++) {
             // Print in hexadecimal
-            printf("%02x ", packet[i]);
+            printf("%02x ", packet[i - 1]);
             if (i % 10 == 0) printf("\n");
         }
         printf("\n");

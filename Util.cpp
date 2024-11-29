@@ -59,17 +59,17 @@ struct FixedDNSHeader {
 };
 
 struct DNSQuestion {
-    char qname;
+    char* qname;
     QueryHeader qheader;
 };
 
 struct DNSRecord {
-    char name;
+    char* name;
     u_short _type;
     u_short _class;
     int _ttl;
     u_short _len;
-    char _data;
+    char* _data;
 };
 
 struct DNSRecordHeader {

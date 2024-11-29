@@ -64,6 +64,7 @@ void DNSResolver::doDNS() {
 }
 
 int DNSResolver::CheckHeader(FixedDNSHeader* dnsResponseHeader, u_short id, u_short rcode) {
+	
 	if (dnsResponseHeader->_ID != htons(id)) {
 		printf("  ++ invalid reply: TXID mismatch, sent 0x%X, received 0x%X\n", dnsResponseHeader->_ID, htons(id));
 		return STATUS_ERROR;
@@ -82,7 +83,7 @@ int DNSResolver::ParseQuestions(unsigned char* responseBuf, int pos) {
 
 	// Parse question
 	unsigned char* qname = responseBuf + pos;
-	printf("[DNSResolver::ParseQuestions::LOG] Parsing question...\n");
+	// printf("[DNSResolver::ParseQuestions::LOG] Parsing question...\n");
 	while (*qname) {
 		int len = *qname;
 		qname++;
@@ -90,15 +91,12 @@ int DNSResolver::ParseQuestions(unsigned char* responseBuf, int pos) {
 			printf("%c", *qname);
 			qname++;
 		}
-		printf(".");
+		if (*(qname + 1)) printf(".");
 	}
 	printf("\n");
 
 	/// Skip the final byte of the QNAME (length byte is 0, indicating end)
     if (*qname == 0) qname++;
-
-	// Debugging
-	// Util::printPacket(qname, 4);
 
     // Now we read the QTYPE (2 bytes)
     unsigned short _type = ntohs(*((unsigned short*)qname));
@@ -108,14 +106,49 @@ int DNSResolver::ParseQuestions(unsigned char* responseBuf, int pos) {
     unsigned short _class = ntohs(*((unsigned short*)qname));
     qname += sizeof(unsigned short);
 
-	printf("[DNSResolver::ParseQuestions::LOG] Type %d Class %d\n", _type, _class);
+	// printf("[DNSResolver::ParseQuestions::LOG] Type %d Class %d\n", _type, _class);
 
 	// Length of questions, type, and class
 	return qname - (responseBuf + pos);
 }
 
 int DNSResolver::ParseRecords(unsigned char* responseBuf, int pos) {
-	return 0;
+    // printf("[DNSResolver::ParseRecords::LOG] Parsing records...\n");
+    
+    unsigned char* qname = responseBuf + pos;
+    
+    // Handle compression
+    if (qname[0] & 0xC0) {  // Check for pointer compression
+        // Read the pointer offset (lower 14 bits of the second byte)
+        unsigned short offset = (qname[0] & 0x3F) << 8 | qname[1];  // Combining the two bytes
+        printf("[DNSResolver::ParseRecords::LOG] Pointer compression detected, offset: %d\n", offset);
+        
+        // Recursively resolve the name using the offset
+        return ParseRecords(responseBuf, offset);
+    } else {
+        // Not a compressed name, so just parse the label
+        int len = qname[0];  // The first byte gives the length of the current label
+        printf("[DNSResolver::ParseRecords::LOG] Label length: %d\n", len);
+        
+        unsigned char* label = qname + 1;  // Start of the label
+        
+        // Print the label for debugging purposes
+        for (int i = 0; i < len; i++) {
+            printf("%c", label[i]);
+        }
+        printf("\n");
+        
+        // Move position to the next label
+        pos += len + 1;  // 1 byte for the length and len bytes for the label
+        qname = responseBuf + pos;  // Update to next position
+        
+        // If there are more labels, continue parsing
+        if (qname[0] != 0) {
+            return ParseRecords(responseBuf, pos);  // Continue with the next label
+        }
+    }
+    
+    return pos;
 }
 
 void DNSResolver::ParseData(char* responseBuf) {
@@ -142,6 +175,8 @@ void DNSResolver::ParseData(char* responseBuf) {
 	printf("Original pos: %d\n", pos);
 	pos += ParseQuestions((unsigned char*)responseBuf, pos);
 	printf("New pos: %d\n", pos);
+
+	ParseRecords((unsigned char*)responseBuf, pos);
 }
 
 void DNSResolver::doReverseDNSLookup() {
@@ -216,7 +251,7 @@ void DNSResolver::doReverseDNSLookup() {
         if (sendto(this->sock, packet, querySize, 0, (struct sockaddr*)&remote, sizeof(remote)) == -1) {
 			printf("[DNSResolver::doReverseDNSLookup::ERROR] sendto() failure, reattemtping...\n");
 			close(this->sock);
-			break;
+			continue;
 		}
 
         // Receive the response
@@ -225,7 +260,7 @@ void DNSResolver::doReverseDNSLookup() {
 		if (responseLen == -1) {
 			printf("[DNSResolver::doReverseDNSLookup::ERROR] recvfrom() failure, reattempting...\n");
 			close(sock);
-			break;
+			continue;
 		}
 
         // Print status
@@ -311,7 +346,7 @@ void DNSResolver::doDNSLookup() {
         if (sendto(this->sock, packet, querySize, 0, (struct sockaddr*)&remote, sizeof(remote)) == -1) {
 			printf("[DNSResolver::doReverseDNSLookup::ERROR] sendto() failure, reattemtping...\n");
 			close(this->sock);
-			break;
+			continue;
 		}
 
         // Receive the response
@@ -320,7 +355,7 @@ void DNSResolver::doDNSLookup() {
 		if (responseLen == -1) {
 			printf("[DNSResolver::doReverseDNSLookup::ERROR] recvfrom() failure, reattempting...\n");
 			close(sock);
-			break;
+			continue;
 		}
 
         // Print status

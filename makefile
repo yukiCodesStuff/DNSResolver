@@ -37,5 +37,5 @@ DNSTest: $(TARGET)
 	./$(TARGET) www.amazon.com 8.8.8.8
 
 bigTest: $(TARGET)
-	./$(TARGET) www.dhs.gov 128.194.135.79
+	./$(TARGET) yahoo.com 128.194.135.85
 

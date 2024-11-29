@@ -78,6 +78,46 @@ int DNSResolver::CheckHeader(FixedDNSHeader* dnsResponseHeader, u_short id, u_sh
 	return STATUS_OK;
 }
 
+int DNSResolver::ParseQuestions(unsigned char* responseBuf, int pos) {
+
+	// Parse question
+	unsigned char* qname = responseBuf + pos;
+	printf("[DNSResolver::ParseQuestions::LOG] Parsing question...\n");
+	while (*qname) {
+		int len = *qname;
+		qname++;
+		for (int i = 0; i < len; i++) {
+			printf("%c", *qname);
+			qname++;
+		}
+		printf(".");
+	}
+	printf("\n");
+
+	/// Skip the final byte of the QNAME (length byte is 0, indicating end)
+    if (*qname == 0) qname++;
+
+	// Debugging
+	// Util::printPacket(qname, 4);
+
+    // Now we read the QTYPE (2 bytes)
+    unsigned short _type = ntohs(*((unsigned short*)qname));
+    qname += sizeof(unsigned short);
+
+    // Read the QCLASS (2 bytes)
+    unsigned short _class = ntohs(*((unsigned short*)qname));
+    qname += sizeof(unsigned short);
+
+	printf("[DNSResolver::ParseQuestions::LOG] Type %d Class %d\n", _type, _class);
+
+	// Length of questions, type, and class
+	return qname - (responseBuf + pos);
+}
+
+int DNSResolver::ParseRecords(unsigned char* responseBuf, int pos) {
+	return 0;
+}
+
 void DNSResolver::ParseData(char* responseBuf) {
 
 	FixedDNSHeader* dnsResponseHeader = (FixedDNSHeader*)responseBuf;
@@ -99,19 +139,9 @@ void DNSResolver::ParseData(char* responseBuf) {
 
 	// Parse Question
 	int pos = sizeof(FixedDNSHeader);
-	unsigned char* qname = (unsigned char*)responseBuf + pos;
-	printf("[DNSResolver::ParseData::LOG] Parsing question...\n");
-	while (*qname) {
-		int len = *qname;
-		printf("Label length: %d\n", len);
-		qname++;
-		for (int i = 0; i < len; i++) {
-			printf("%c", *qname);
-			qname++;
-		}
-		printf("\n");
-	}
-	printf("\n");
+	printf("Original pos: %d\n", pos);
+	pos += ParseQuestions((unsigned char*)responseBuf, pos);
+	printf("New pos: %d\n", pos);
 }
 
 void DNSResolver::doReverseDNSLookup() {
@@ -249,6 +279,7 @@ void DNSResolver::doDNSLookup() {
 			start++; // skip dots
 		}
 	}
+
 	*qptr++ = 0; // null terminate
 	*qptr = '\0';
 	memcpy(packet + sizeof(dnsHeader), &qname, strlen(qname) + 1);

@@ -34,10 +34,12 @@ public:
     // Helper Functions
     void doDNS();
     int doConnect();
-    void ParseData(char* responseBuf);
     int CheckHeader(FixedDNSHeader* dnsResponseHeader, u_short id, u_short rcode);
+    int ParseQuestions(unsigned char* responseBuf, int pos); // Return question size
+    int ParseRecords(unsigned char* responseBuf, int pos);
 
     // Main Operations
+    void ParseData(char* responseBuf);
     void doReverseDNSLookup();
     void doDNSLookup();
 };

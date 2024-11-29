@@ -80,38 +80,38 @@ int DNSResolver::CheckHeader(FixedDNSHeader* dnsResponseHeader, u_short id, u_sh
 
 void DNSResolver::ParseData(char* responseBuf) {
 
-		FixedDNSHeader* dnsResponseHeader = (FixedDNSHeader*)responseBuf;
+	FixedDNSHeader* dnsResponseHeader = (FixedDNSHeader*)responseBuf;
 
-		// Reverse from network byte order to host byte order
-		u_short id = ntohs(dnsResponseHeader->_ID);
-		u_short flags = ntohs(dnsResponseHeader->_flags);
-		u_short qdcount = ntohs(dnsResponseHeader->_questions);
-		u_short ancount = ntohs(dnsResponseHeader->_answers);
-		u_short nscount = ntohs(dnsResponseHeader->_authority);
-		u_short arcount = ntohs(dnsResponseHeader->_additional);
-		u_short rcode = flags & 0xF;
+	// Reverse from network byte order to host byte order
+	u_short id = ntohs(dnsResponseHeader->_ID);
+	u_short flags = ntohs(dnsResponseHeader->_flags);
+	u_short qdcount = ntohs(dnsResponseHeader->_questions);
+	u_short ancount = ntohs(dnsResponseHeader->_answers);
+	u_short nscount = ntohs(dnsResponseHeader->_authority);
+	u_short arcount = ntohs(dnsResponseHeader->_additional);
+	u_short rcode = flags & 0xF;
 
-		printf("  TXID %X, flags %X, questions %d, answers %d, authority %d, additional %d\n", id, flags, qdcount, ancount, nscount, arcount);
+	printf("  TXID %X, flags %X, questions %d, answers %d, authority %d, additional %d\n", id, flags, qdcount, ancount, nscount, arcount);
 
-		if (CheckHeader(dnsResponseHeader, id, rcode) != STATUS_OK) {
-			return;
-		}
+	if (CheckHeader(dnsResponseHeader, id, rcode) != STATUS_OK) {
+		return;
+	}
 
-		// Parse Question
-		int pos = sizeof(FixedDNSHeader);
-		unsigned char* qname = (unsigned char*)responseBuf + pos;
-		printf("[DNSResolver::ParseData::LOG] Parsing question...\n");
-		while (*qname) {
-			int len = *qname;
-			printf("Label length: %d\n", len);
+	// Parse Question
+	int pos = sizeof(FixedDNSHeader);
+	unsigned char* qname = (unsigned char*)responseBuf + pos;
+	printf("[DNSResolver::ParseData::LOG] Parsing question...\n");
+	while (*qname) {
+		int len = *qname;
+		printf("Label length: %d\n", len);
+		qname++;
+		for (int i = 0; i < len; i++) {
+			printf("%c", *qname);
 			qname++;
-			for (int i = 0; i < len; i++) {
-				printf("%c", *qname);
-				qname++;
-			}
-			printf("\n");
 		}
 		printf("\n");
+	}
+	printf("\n");
 }
 
 void DNSResolver::doReverseDNSLookup() {

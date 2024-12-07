@@ -23,10 +23,17 @@ int DNSResolver::doConnect() {
 
     // Set timeout using struct timeval
     struct timeval timeout;
-    timeout.tv_sec = 1; // seconds
+    timeout.tv_sec = 10; // seconds
     timeout.tv_usec = 0; // 1000 milliseconds (1 second)
 
-    if (setsockopt(this->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
+    if (setsockopt(this->sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) == -1) {
+        // Print error details using strerror
+        printf("[DNSResolver::doConnect::ERROR] setsockopt() failed: %s\n", strerror(errno));
+        close(this->sock);
+        return STATUS_ERROR;
+    }
+
+	if (setsockopt(this->sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1) {
         // Print error details using strerror
         printf("[DNSResolver::doConnect::ERROR] setsockopt() failed: %s\n", strerror(errno));
         close(this->sock);

@@ -39,3 +39,6 @@ DNSTest: $(TARGET)
 bigTest: $(TARGET)
 	./$(TARGET) yahoo.com 128.194.135.85
 
+DNSTamu: $(TARET)
+	./$(TARGET) dhs.gov 8.8.8.8
+
